@@ -122,43 +122,11 @@ def load_classified():
     return df
 
 @st.cache_data
-@st.cache_data
-def load_geodata():
-    """
-    On cloud: build GeoDataFrame from classified_final.csv
-    On local: try GeoPackage first, fall back to CSV
-    """
-    # Try GeoPackage first (local only)
-    p = RESULTS_DIR / "change_polygons_classified.gpkg"
-    if p.exists():
-        try:
-            gdf = gpd.read_file(str(p))
-            if gdf.crs and gdf.crs.to_epsg() != 4326:
-                gdf = gdf.to_crs("EPSG:4326")
-            return gdf
-        except Exception:
-            pass
-
-    # Fall back to CSV — works on Streamlit Cloud
-    csv_path = RESULTS_DIR / "classified_final.csv"
-    if not csv_path.exists():
-        return gpd.GeoDataFrame()
-
-    df = pd.read_csv(str(csv_path))
-
-    # Check if geometry column exists
-    if "geometry" not in df.columns:
-        # No geometry — return empty GeoDataFrame
-        # Map page will show message instead of crashing
-        return gpd.GeoDataFrame()
-
-    try:
-        from shapely import wkt
-        df["geometry"] = df["geometry"].apply(wkt.loads)
-        gdf = gpd.GeoDataFrame(df, geometry="geometry", crs="EPSG:4326")
-        return gdf
-    except Exception:
-        return gpd.GeoDataFrame()
+def load_monthly():
+    p = RESULTS_DIR / "monthly_construction_summary.csv"
+    if not p.exists():
+        return pd.DataFrame()
+    return pd.read_csv(str(p))
 
 @st.cache_data
 def load_geodata():
@@ -569,14 +537,6 @@ elif page == "Change Detection Map":
 
     if df.empty:
         st.error("classified_final.csv not found")
-        st.stop()
-    
-    if gdf.empty or "change_type" not in gdf.columns:
-        st.warning(
-            "Map requires geometry data not available on cloud deployment. "
-            "The interactive map works locally. "
-            "See the Economic Correlation and Overview pages for full findings."
-        )
         st.stop()
 
     # Valid zone → change type mapping from your actual data
