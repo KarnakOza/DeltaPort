@@ -130,14 +130,18 @@ def load_monthly():
 
 @st.cache_data
 def load_geodata():
-    p = RESULTS_DIR / "change_polygons_classified.gpkg"
-    if not p.exists():
-        p = RESULTS_DIR / "change_polygons.gpkg"
+    """Load centroid points from CSV — works on Streamlit Cloud."""
+    p = RESULTS_DIR / "map_centroids.csv"
     if not p.exists():
         return gpd.GeoDataFrame()
-    gdf = gpd.read_file(str(p))
-    if gdf.crs and gdf.crs.to_epsg() != 4326:
-        gdf = gdf.to_crs("EPSG:4326")
+    df = pd.read_csv(str(p))
+    if "lat" not in df.columns or "lon" not in df.columns:
+        return gpd.GeoDataFrame()
+    gdf = gpd.GeoDataFrame(
+        df,
+        geometry=gpd.points_from_xy(df["lon"], df["lat"]),
+        crs="EPSG:4326"
+    )
     return gdf
 
 @st.cache_data
@@ -673,14 +677,17 @@ elif page == "Change Detection Map":
             delta = row.get("mean_delta_db", 0)
             date  = row.get("date_from", "")
 
-            folium.GeoJson(
-                row.geometry.__geo_interface__,
-                style_function=lambda x, c=color: {
-                    "fillColor"  : c,
-                    "color"      : c,
-                    "weight"     : 0.5,
-                    "fillOpacity": 0.55,
-                },
+            # Radius scaled by area — bigger polygon = bigger circle
+            radius = max(4, min(20, (area / 10000) ** 0.5 * 3))
+
+            folium.CircleMarker(
+                location=[row.geometry.y, row.geometry.x],
+                radius=radius,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.7,
+                weight=1,
                 tooltip=folium.Tooltip(
                     f"<b>{ct.replace('_',' ')}</b><br>"
                     f"Date: {date}<br>"
