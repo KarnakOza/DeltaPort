@@ -194,8 +194,8 @@ def render_tif_thumbnail(filepath, colormap="gray", vmin=None, vmax=None):
     """Render a GeoTIFF as a small PNG thumbnail."""
     try:
         with rasterio.open(str(filepath)) as src:
-            h = min(300, src.height)
-            w = min(300, src.width)
+            h = min(1000, src.height)
+            w = min(1000, src.width)
             data = src.read(
                 1, out_shape=(h, w),
                 resampling=Resampling.average
