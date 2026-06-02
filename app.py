@@ -162,7 +162,11 @@ def get_zscore_files():
 @st.cache_data
 def get_processed_files():
     # Cloud: data/sar/ — matches SAR_cropped_YYYYMMDD_aoi.tif
-    cloud_dir = Path("data/sar")
+    cloud_dir = Path("data/results/sar")
+
+    st.write("Looking in:", cloud_dir.resolve())
+    st.write("Folder exists:", cloud_dir.exists())
+
     if cloud_dir.exists():
         files = sorted(cloud_dir.glob("SAR_cropped_*_aoi.tif"))
         if not files:
@@ -170,6 +174,7 @@ def get_processed_files():
             files = sorted(cloud_dir.glob("*.tif"))
         if files:
             return files
+        
     # Local Windows fallback
     local_cropped = Path(r"G:\Project\output\cropped")
     if local_cropped.exists():
