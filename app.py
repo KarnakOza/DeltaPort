@@ -161,9 +161,16 @@ def get_zscore_files():
 
 @st.cache_data
 def get_processed_files():
-    if not PROCESSED_DIR.exists():
-        return []
-    return sorted(PROCESSED_DIR.glob("*_processed.tif"))
+    # Cloud: read from data/sar/
+    cloud_dir = Path("data/sar")
+    if cloud_dir.exists():
+        files = sorted(cloud_dir.glob("SAR_preprocessed_*_aoi.tif"))
+        if files:
+            return files
+    # Local fallback
+    if PROCESSED_DIR.exists():
+        return sorted(PROCESSED_DIR.glob("*_processed.tif"))
+    return []
 
 def extract_date(filename):
     m = re.search(r'(\d{8})', str(filename))
