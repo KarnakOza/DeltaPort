@@ -67,45 +67,96 @@ else:
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
+  /* Force white background everywhere */
+  .stApp { background-color: #ffffff; }
+  section[data-testid="stSidebar"] { background-color: #f8f9fa; }
+
   .main-header {
-    font-size: 2rem; font-weight: 600;
-    color: #1a1a2e; margin-bottom: 0.25rem;
+    font-size: 1.8rem; font-weight: 700;
+    color: #111827; margin-bottom: 0.2rem;
+    letter-spacing: -0.5px;
   }
   .sub-header {
-    font-size: 1rem; color: #666; margin-bottom: 1.5rem;
+    font-size: 0.95rem; color: #6b7280;
+    margin-bottom: 1.5rem;
   }
   .metric-card {
-    background: #f8f9fa; border-radius: 10px;
-    padding: 1rem 1.25rem; border-left: 4px solid #E24B4A;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    border-top: 3px solid #dc2626;
   }
-  .metric-val { font-size: 1.8rem; font-weight: 600; color: #1a1a2e; }
-  .metric-lbl { font-size: 0.8rem; color: #888; margin-bottom: 4px; }
-  .metric-sub { font-size: 0.75rem; color: #aaa; margin-top: 2px; }
+  .metric-val {
+    font-size: 1.7rem; font-weight: 700;
+    color: #111827; line-height: 1.2;
+  }
+  .metric-lbl {
+    font-size: 0.75rem; color: #6b7280;
+    margin-bottom: 6px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .metric-sub {
+    font-size: 0.72rem; color: #9ca3af;
+    margin-top: 3px;
+  }
   .finding-box {
-    background: #fff5f5; border-left: 4px solid #E24B4A;
-    border-radius: 0 8px 8px 0; padding: 1rem 1.25rem;
-    font-size: 0.95rem; line-height: 1.6; color: #333;
-    margin: 1rem 0;
+    background: #fef2f2;
+    border-left: 4px solid #dc2626;
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: #1f2937;
+    margin: 1.2rem 0;
   }
   .validated-box {
-    background: #f0faf4; border: 1px solid #b7e5c8;
-    border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    color: #14532d;
+    font-size: 0.9rem;
+    line-height: 1.7;
   }
-  .phase-high { background:#fee2e2; color:#991b1b;
-    padding:2px 10px; border-radius:20px; font-size:12px; }
-  .phase-mod  { background:#fef3c7; color:#92400e;
-    padding:2px 10px; border-radius:20px; font-size:12px; }
-  .phase-low  { background:#dcfce7; color:#166534;
-    padding:2px 10px; border-radius:20px; font-size:12px; }
-  .phase-base { background:#f1f5f9; color:#64748b;
-    padding:2px 10px; border-radius:20px; font-size:12px; }
-  .tif-card {
-    border: 1px solid #e5e7eb; border-radius: 10px;
-    padding: 0.75rem; background: white; margin-bottom: 0.5rem;
+  .phase-high {
+    background: #fee2e2; color: #991b1b;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
   }
-  .tif-title { font-size: 0.8rem; font-weight: 600;
-    color: #374151; margin-bottom: 4px; }
-  .tif-meta  { font-size: 0.7rem; color: #9ca3af; }
+  .phase-mod {
+    background: #fef3c7; color: #92400e;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .phase-low {
+    background: #dcfce7; color: #166534;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .phase-base {
+    background: #f1f5f9; color: #475569;
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+
+  /* Make all text readable */
+  p, li, td, th, label, span {
+    color: #1f2937 !important;
+  }
+  h1, h2, h3 { color: #111827 !important; }
+
+  /* Clean card style */
+  div[data-testid="stExpander"] {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+  }
+
+  /* Sidebar text */
+  .css-1d391kg, [data-testid="stSidebar"] * {
+    color: #374151 !important;
+  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -194,8 +245,8 @@ def render_tif_thumbnail(filepath, colormap="gray", vmin=None, vmax=None):
     """Render a GeoTIFF as a small PNG thumbnail."""
     try:
         with rasterio.open(str(filepath)) as src:
-            h = min(1000, src.height)
-            w = min(1000, src.width)
+            h = min(300, src.height)
+            w = min(300, src.width)
             data = src.read(
                 1, out_shape=(h, w),
                 resampling=Resampling.average
@@ -257,9 +308,9 @@ with st.sidebar:
 # PAGE 1: OVERVIEW
 # ─────────────────────────────────────────────
 if page == "Overview":
-    st.markdown('<h1 class="main-header">🛰️ Mundra Port SAR Economic Intelligence</h1>',
+    st.markdown('<h1 class="main-header">DeltaPort</h1>',
                 unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Sentinel-1 change detection · 31 scenes · April 2025 – April 2026</p>',
+    st.markdown('<p class="sub-header">Satellite radar analysis of Mundra Port construction activity · Sentinel-1 · 31 scenes · April 2025 – April 2026</p>',
                 unsafe_allow_html=True)
 
     # Key metrics
