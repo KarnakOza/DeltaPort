@@ -67,95 +67,41 @@ else:
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* Force white background everywhere */
-  .stApp { background-color: #ffffff; }
-  section[data-testid="stSidebar"] { background-color: #f8f9fa; }
-
+  /* Force dark background */
+  .stApp { background: #0a0e17 !important; color: #c9d1e0 !important; }
+  .stSidebar { background: #0d1220 !important; border-right: 1px solid #1e2d45; }
+  
+  /* Top title */
   .main-header {
-    font-size: 1.8rem; font-weight: 700;
-    color: #111827; margin-bottom: 0.2rem;
-    letter-spacing: -0.5px;
+    font-family: monospace; font-size: 1.6rem; font-weight: 500;
+    color: #4a9eff; letter-spacing: 3px; text-transform: uppercase;
   }
-  .sub-header {
-    font-size: 0.95rem; color: #6b7280;
-    margin-bottom: 1.5rem;
-  }
+  .sub-header { font-size: 0.85rem; color: #3a5a7a; letter-spacing: 1px; font-family: monospace; }
+
+  /* Metric cards */
   .metric-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    background: #0d1525; border: 1px solid #1a2d45;
+    border-top: 2px solid #1e4080; border-radius: 4px;
     padding: 1rem 1.25rem;
-    border-top: 3px solid #dc2626;
   }
-  .metric-val {
-    font-size: 1.7rem; font-weight: 700;
-    color: #111827; line-height: 1.2;
-  }
-  .metric-lbl {
-    font-size: 0.75rem; color: #6b7280;
-    margin-bottom: 6px; text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .metric-sub {
-    font-size: 0.72rem; color: #9ca3af;
-    margin-top: 3px;
-  }
+  .metric-card.hot { border-top-color: #ff4444; }
+  .metric-card.ok  { border-top-color: #00e676; }
+  .metric-card.warn{ border-top-color: #ffaa00; }
+  .metric-val { font-size: 1.8rem; font-weight: 500; color: #e0eaff; font-family: monospace; }
+  .metric-lbl { font-size: 0.7rem; color: #4a6080; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; font-family: monospace; }
+  .metric-sub { font-size: 0.7rem; color: #2a4060; margin-top: 2px; font-family: monospace; }
+
+  /* Finding box */
   .finding-box {
-    background: #fef2f2;
-    border-left: 4px solid #dc2626;
-    border-radius: 0 8px 8px 0;
-    padding: 1rem 1.25rem;
-    font-size: 0.92rem;
-    line-height: 1.7;
-    color: #1f2937;
-    margin: 1.2rem 0;
+    background: #0f1c10; border: 1px solid #1a4a1a;
+    border-left: 3px solid #00e676; border-radius: 0 4px 4px 0;
+    padding: 0.85rem 1.25rem; font-size: 0.85rem;
+    color: #5ab86c; font-family: monospace; letter-spacing: 0.3px;
   }
   .validated-box {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 10px;
-    padding: 1rem 1.25rem;
-    margin: 1rem 0;
-    color: #14532d;
-    font-size: 0.9rem;
-    line-height: 1.7;
-  }
-  .phase-high {
-    background: #fee2e2; color: #991b1b;
-    padding: 2px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600;
-  }
-  .phase-mod {
-    background: #fef3c7; color: #92400e;
-    padding: 2px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600;
-  }
-  .phase-low {
-    background: #dcfce7; color: #166534;
-    padding: 2px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600;
-  }
-  .phase-base {
-    background: #f1f5f9; color: #475569;
-    padding: 2px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600;
-  }
-
-  /* Make all text readable */
-  p, li, td, th, label, span {
-    color: #1f2937 !important;
-  }
-  h1, h2, h3 { color: #111827 !important; }
-
-  /* Clean card style */
-  div[data-testid="stExpander"] {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-  }
-
-  /* Sidebar text */
-  .css-1d391kg, [data-testid="stSidebar"] * {
-    color: #374151 !important;
+    background: #0a1220; border: 1px solid #1a3050;
+    border-left: 3px solid #4a9eff; border-radius: 0 4px 4px 0;
+    padding: 1rem 1.25rem; font-family: monospace; color: #5a8aaa;
   }
 </style>
 """, unsafe_allow_html=True)
