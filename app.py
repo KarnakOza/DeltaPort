@@ -447,6 +447,177 @@ if page == "Overview":
         ₹30,000 crore Mundra berth expansion by approximately 6 weeks.
     </div>""", unsafe_allow_html=True)
 
+    # ── AOI MAP ──────────────────────────────────
+    st.markdown("""
+    <div style="font-size:9px;color:rgba(0,255,70,0.4);letter-spacing:0.2em;
+                margin:1.2rem 0 0.4rem 0">
+        // AREA OF INTEREST · MUNDRA PORT · 22.76°N 69.67°E · UTM 43N
+    </div>""", unsafe_allow_html=True)
+
+    map_col, info_col = st.columns([3, 1])
+
+    with map_col:
+        aoi_map = folium.Map(
+            location=[22.76, 69.67],
+            zoom_start=12,
+            tiles=None,
+            width="100%",
+        )
+
+        # Dark basemap
+        folium.TileLayer(
+            tiles="CartoDB dark_matter",
+            name="Dark",
+            attr="CartoDB",
+        ).add_to(aoi_map)
+
+        # Satellite layer toggle
+        folium.TileLayer(
+            tiles="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            attr="Google Satellite",
+            name="Satellite",
+            overlay=False,
+        ).add_to(aoi_map)
+
+        # AOI bounding box
+        aoi_bounds = [[22.60465319, 69.46046562], [22.93724805, 69.81863230]]
+        folium.Rectangle(
+            bounds=aoi_bounds,
+            color="#00ff46",
+            weight=2,
+            fill=True,
+            fill_color="#00ff46",
+            fill_opacity=0.04,
+            dash_array="6 4",
+            tooltip="AOI: Mundra Port region",
+        ).add_to(aoi_map)
+
+        # Zone polygons with labels
+        zones = {
+            "TERMINAL\nHARDSTANDING": {
+                "bounds": [[22.72, 69.58], [22.80, 69.75]],
+                "color" : "#E24B4A",
+                "fill"  : 0.10,
+                "tip"   : "Terminal Hardstanding — peak activity Aug 2025 · 17.2 dB",
+            },
+            "PORT\nHINTERLAND": {
+                "bounds": [[22.80, 69.58], [22.95, 69.75]],
+                "color" : "#EF9F27",
+                "fill"  : 0.07,
+                "tip"   : "Port Hinterland — warehouse & logistics activity",
+            },
+            "OFFSHORE\nANCHORAGE": {
+                "bounds": [[22.55, 69.46], [22.72, 69.82]],
+                "color" : "#42A5F5",
+                "fill"  : 0.05,
+                "tip"   : "Offshore Anchorage — vessel presence zone",
+            },
+        }
+
+        for zname, z in zones.items():
+            folium.Rectangle(
+                bounds=z["bounds"],
+                color=z["color"],
+                weight=1.5,
+                fill=True,
+                fill_color=z["color"],
+                fill_opacity=z["fill"],
+                tooltip=folium.Tooltip(z["tip"]),
+            ).add_to(aoi_map)
+
+            cy = (z["bounds"][0][0] + z["bounds"][1][0]) / 2
+            cx = (z["bounds"][0][1] + z["bounds"][1][1]) / 2
+            label = zname.replace("\n", "<br>")
+            folium.Marker(
+                location=[cy, cx],
+                icon=folium.DivIcon(
+                    html=f'<div style="font-size:9px;color:{z["color"]};'
+                         f'font-family:monospace;font-weight:700;'
+                         f'text-align:center;white-space:nowrap;'
+                         f'text-shadow:0 0 6px rgba(0,0,0,0.9)">'
+                         f'{label}</div>',
+                    icon_size=(120, 30),
+                    icon_anchor=(60, 15),
+                )
+            ).add_to(aoi_map)
+
+        # Peak event marker
+        folium.CircleMarker(
+            location=[22.762, 69.665],
+            radius=14,
+            color="#E24B4A",
+            fill=True,
+            fill_color="#E24B4A",
+            fill_opacity=0.25,
+            weight=2,
+            tooltip=folium.Tooltip(
+                "<b style='color:#E24B4A'>⚠ PEAK ACTIVITY</b><br>"
+                "Aug 21, 2025<br>17.2 dB · Terminal Expansion<br>13.8 km² affected"
+            ),
+        ).add_to(aoi_map)
+        folium.CircleMarker(
+            location=[22.762, 69.665],
+            radius=5,
+            color="#E24B4A",
+            fill=True,
+            fill_color="#ff4444",
+            fill_opacity=1.0,
+            weight=0,
+        ).add_to(aoi_map)
+
+        # Scale + coord overlay
+        scale_html = """
+        <div style="position:absolute;bottom:10px;left:10px;z-index:1000;
+             background:rgba(10,15,10,0.85);border:1px solid rgba(0,255,70,0.3);
+             padding:6px 10px;font-family:monospace;font-size:10px;color:#00ff46">
+            22.76°N &nbsp;69.67°E &nbsp;·&nbsp; UTM 43N<br>
+            AOI: 39 × 37 km &nbsp;·&nbsp; EPSG:32643
+        </div>"""
+        aoi_map.get_root().html.add_child(folium.Element(scale_html))
+
+        folium.LayerControl(position="topright").add_to(aoi_map)
+        st_folium(aoi_map, width=None, height=340, returned_objects=[])
+
+    with info_col:
+        st.markdown("""
+<div style="font-family:monospace;font-size:10px;color:rgba(0,255,70,0.85);
+            line-height:2;padding-top:0.5rem">
+
+<div style="color:#00ff46;font-size:11px;margin-bottom:0.5rem">
+▸ ZONE LEGEND
+</div>
+
+<span style="color:#E24B4A">■</span> Terminal Hardstanding<br>
+<span style="color:rgba(226,75,74,0.5)">  └ PEAK ZONE</span><br>
+<span style="color:rgba(226,75,74,0.5)">  └ 17.2 dB · Aug 2025</span><br>
+<br>
+<span style="color:#EF9F27">■</span> Port Hinterland<br>
+<span style="color:rgba(239,159,39,0.5)">  └ Warehouse / logistics</span><br>
+<br>
+<span style="color:#42A5F5">■</span> Offshore Anchorage<br>
+<span style="color:rgba(66,165,245,0.5)">  └ Vessel presence</span><br>
+<br>
+<span style="color:#00ff46">□</span> AOI boundary<br>
+<span style="color:rgba(0,255,70,0.4)">  └ 39 × 37 km</span><br>
+<br>
+<span style="color:#E24B4A">⬤</span> Peak event<br>
+<span style="color:rgba(226,75,74,0.5)">  └ Aug 21 2025</span><br>
+
+<div style="margin-top:1rem;border-top:1px solid rgba(0,255,70,0.15);
+            padding-top:0.8rem;color:rgba(0,255,70,0.4);font-size:9px">
+SENSOR &nbsp;&nbsp;&nbsp; S1A IW GRD<br>
+SCENES &nbsp;&nbsp;&nbsp; 31<br>
+PERIOD &nbsp;&nbsp;&nbsp; Apr 25–Apr 26<br>
+PASS &nbsp;&nbsp;&nbsp;&nbsp; Descending<br>
+POL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VV + VH<br>
+RES &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 20 m GSD
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
+
+    # ── CHARTS ───────────────────────────────────
     col_left, col_right = st.columns([1, 1])
 
     with col_left:
