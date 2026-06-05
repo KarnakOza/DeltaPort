@@ -46,21 +46,61 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────
-# PATHS — works both locally and on Streamlit Cloud
-# Change DATA_ROOT to "data" when deploying to cloud
+# PATHS
 # ─────────────────────────────────────────────
 if os.path.exists(r"G:\Project"):
-    # Local Windows machine
     DATA_ROOT    = Path(r"G:\Project\output")
     CHANGES_DIR  = DATA_ROOT / "changes"
     RESULTS_DIR  = DATA_ROOT / "results"
     PROCESSED_DIR= DATA_ROOT
 else:
-    # Streamlit Cloud — data folder in repo root
     DATA_ROOT    = Path("data")
     CHANGES_DIR  = DATA_ROOT / "changes"
     RESULTS_DIR  = DATA_ROOT / "results"
     PROCESSED_DIR= DATA_ROOT / "processed"
+
+# ─────────────────────────────────────────────
+# DARK THEME PLOTLY HELPER — call this on every fig
+# ─────────────────────────────────────────────
+DARK_BG   = "#0a0f0a"
+GRID_COL  = "rgba(0,255,70,0.12)"
+GREEN     = "#00ff46"
+GREEN_DIM = "rgba(0,255,70,0.5)"
+FONT_FAM  = "Share Tech Mono, Courier New, monospace"
+
+def apply_dark_theme(fig, rows=1):
+    """Apply consistent dark green terminal theme to any plotly figure."""
+    fig.update_layout(
+        plot_bgcolor  = DARK_BG,
+        paper_bgcolor = DARK_BG,
+        font          = dict(color=GREEN, family=FONT_FAM, size=11),
+        legend        = dict(
+            bgcolor     = "rgba(0,0,0,0.5)",
+            bordercolor = GREEN_DIM,
+            borderwidth = 1,
+            font        = dict(color=GREEN, size=10),
+        ),
+        title_font    = dict(color=GREEN, family=FONT_FAM),
+    )
+    # Update ALL axes (works for subplots too)
+    fig.update_xaxes(
+        gridcolor    = GRID_COL,
+        linecolor    = GREEN_DIM,
+        tickfont     = dict(color=GREEN, size=10),
+        title_font   = dict(color=GREEN_DIM, size=10),
+        zerolinecolor= GREEN_DIM,
+    )
+    fig.update_yaxes(
+        gridcolor    = GRID_COL,
+        linecolor    = GREEN_DIM,
+        tickfont     = dict(color=GREEN, size=10),
+        title_font   = dict(color=GREEN_DIM, size=10),
+        zerolinecolor= GREEN_DIM,
+    )
+    # Fix subplot titles (they're annotations internally)
+    for ann in fig.layout.annotations:
+        ann.font = dict(color=GREEN, size=11, family=FONT_FAM)
+    return fig
 
 # ─────────────────────────────────────────────
 # CUSTOM CSS
@@ -220,7 +260,7 @@ p, li, td, th, label, span, div {
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# DATA LOADING — cached for performance
+# DATA LOADING
 # ─────────────────────────────────────────────
 @st.cache_data
 def load_classified():
@@ -240,7 +280,6 @@ def load_monthly():
 
 @st.cache_data
 def load_geodata():
-    """Load centroid points from CSV — works on Streamlit Cloud."""
     p = RESULTS_DIR / "map_centroids.csv"
     if not p.exists():
         return gpd.GeoDataFrame()
@@ -271,21 +310,13 @@ def get_zscore_files():
 
 @st.cache_data
 def get_processed_files():
-    # Cloud: data/sar/ — matches SAR_cropped_YYYYMMDD_aoi.tif
     cloud_dir = Path("data/results/sar")
-
-    st.write("Looking in:", cloud_dir.resolve())
-    st.write("Folder exists:", cloud_dir.exists())
-
     if cloud_dir.exists():
         files = sorted(cloud_dir.glob("SAR_cropped_*_aoi.tif"))
         if not files:
-            # fallback: any .tif in that folder
             files = sorted(cloud_dir.glob("*.tif"))
         if files:
             return files
-        
-    # Local Windows fallback
     local_cropped = Path(r"G:\Project\output\cropped")
     if local_cropped.exists():
         files = sorted(local_cropped.glob("SAR_cropped_*_aoi.tif"))
@@ -301,7 +332,6 @@ def extract_date(filename):
 
 @st.cache_data
 def render_tif_thumbnail(filepath, colormap="gray", vmin=None, vmax=None):
-    """Render a GeoTIFF as a small PNG thumbnail."""
     try:
         with rasterio.open(str(filepath)) as src:
             h = min(300, src.height)
@@ -313,7 +343,6 @@ def render_tif_thumbnail(filepath, colormap="gray", vmin=None, vmax=None):
             nd = src.nodata or -9999.0
             data[data == nd] = np.nan
 
-        # Clip extremes
         valid = data[~np.isnan(data)]
         if len(valid) == 0:
             return None
@@ -333,7 +362,7 @@ def render_tif_thumbnail(filepath, colormap="gray", vmin=None, vmax=None):
         plt.close()
         buf.seek(0)
         return buf
-    except Exception as e:
+    except Exception:
         return None
 
 # ─────────────────────────────────────────────
@@ -382,7 +411,6 @@ if page == "Overview":
     </div>
     """, unsafe_allow_html=True)
 
-    # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown("""<div class="metric-card">
@@ -411,7 +439,6 @@ if page == "Overview":
 
     st.markdown("")
 
-    # Key finding
     st.markdown("""<div class="finding-box">
         <strong>🔍 Key finding:</strong> Sentinel-1 SAR detected peak construction
         activity at Mundra Port terminal zone in June–August 2025
@@ -420,7 +447,6 @@ if page == "Overview":
         ₹30,000 crore Mundra berth expansion by approximately 6 weeks.
     </div>""", unsafe_allow_html=True)
 
-    # Two column layout
     col_left, col_right = st.columns([1, 1])
 
     with col_left:
@@ -428,36 +454,44 @@ if page == "Overview":
         monthly = load_monthly()
         if not monthly.empty:
             import plotly.graph_objects as go
+
             colors = []
             for _, row in monthly.iterrows():
-                p = row.get("activity_phase","")
-                if "HIGH" in p: colors.append("#E24B4A")
+                p = row.get("activity_phase", "")
+                if "HIGH" in p:     colors.append("#E24B4A")
                 elif "MODERATE" in p: colors.append("#EF9F27")
-                elif "LOW" in p: colors.append("#639922")
-                else: colors.append("#888780")
+                elif "LOW" in p:    colors.append("#639922")
+                else:               colors.append("#444d44")
 
             fig = go.Figure(go.Bar(
                 x=monthly["month_str"],
                 y=monthly["peak_delta_db"],
                 marker_color=colors,
+                marker_line_color="rgba(0,255,70,0.3)",
+                marker_line_width=1,
                 text=monthly["peak_delta_db"].round(1),
                 textposition="outside",
-                textfont=dict(size=10),
+                textfont=dict(size=10, color=GREEN),
             ))
-            fig.add_hline(y=3, line_dash="dash",
-                          line_color="#888", annotation_text="3 dB threshold",
-                          annotation_font_size=10)
-            fig.add_hline(y=6, line_dash="dot",
-                          line_color="#E24B4A",
-                          annotation_text="6 dB high confidence",
-                          annotation_font_size=10)
+            fig.add_hline(
+                y=3, line_dash="dash", line_color="rgba(0,255,70,0.4)",
+                annotation_text="3 dB threshold",
+                annotation_font=dict(color=GREEN_DIM, size=9),
+                annotation_position="bottom right",
+            )
+            fig.add_hline(
+                y=6, line_dash="dot", line_color="#E24B4A",
+                annotation_text="6 dB high confidence",
+                annotation_font=dict(color="#E24B4A", size=9),
+                annotation_position="bottom right",
+            )
             fig.update_layout(
-                height=300, margin=dict(l=0,r=0,t=20,b=0),
+                height=300,
+                margin=dict(l=0, r=0, t=30, b=0),
                 yaxis_title="Peak Δσ° (dB)",
                 showlegend=False,
-                plot_bgcolor="white",
-                paper_bgcolor="white",
             )
+            apply_dark_theme(fig)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("monthly_construction_summary.csv not found")
@@ -466,43 +500,46 @@ if page == "Overview":
         st.subheader("Change types detected")
         df = load_classified()
         if not df.empty:
+            import plotly.graph_objects as go
+
             port = df[df["zone_id"] > 0]
             ct = (port.groupby("change_type")["area_m2"]
-                     .sum().sort_values(ascending=True) / 1e6)
+                      .sum().sort_values(ascending=True) / 1e6)
             ct = ct[ct > 0]
 
-            import plotly.graph_objects as go
             type_colors = {
                 "Terminal_Expansion"    : "#A32D2D",
                 "Construction_Active"   : "#E24B4A",
                 "Construction_Equipment": "#FF7043",
                 "Warehouse_Construction": "#EF9F27",
                 "Hinterland_Activity"   : "#639922",
-                "Terminal_Change"       : "#B4B2A9",
-                "Hinterland_Change"     : "#D3D1C7",
-                "Anchorage_Change"      : "#85B7EB",
+                "Terminal_Change"       : "#5a5a5a",
+                "Hinterland_Change"     : "#3a3a3a",
+                "Anchorage_Change"      : "#1a4a7a",
             }
+
             fig2 = go.Figure(go.Bar(
                 x=ct.values.round(2),
-                y=[n.replace("_"," ") for n in ct.index],
+                y=[n.replace("_", " ") for n in ct.index],
                 orientation="h",
-                marker_color=[type_colors.get(n,"#888") for n in ct.index],
+                marker_color=[type_colors.get(n, "#444") for n in ct.index],
+                marker_line_color="rgba(0,255,70,0.2)",
+                marker_line_width=1,
                 text=ct.values.round(2),
                 textposition="outside",
-                textfont=dict(size=10),
+                textfont=dict(size=10, color=GREEN),
             ))
             fig2.update_layout(
-                height=300, margin=dict(l=0,r=0,t=20,b=40),
+                height=300,
+                margin=dict(l=0, r=0, t=30, b=40),
                 xaxis_title="Total area (km²)",
                 showlegend=False,
-                plot_bgcolor="white",
-                paper_bgcolor="white",
             )
+            apply_dark_theme(fig2)
             st.plotly_chart(fig2, use_container_width=True)
         else:
             st.info("classified_final.csv not found")
 
-    # Validation
     st.markdown("""<div class="validated-box">
         <strong>✅ Validated against public record</strong><br><br>
         <b>SAR peak detection:</b> July–August 2025 · 17.2 dB · terminal hardstanding zone<br>
@@ -541,9 +578,7 @@ elif page == "SAR File Gallery":
                 col_img, col_meta = st.columns([2, 1])
                 with col_img:
                     with st.spinner("Rendering preview..."):
-                        buf = render_tif_thumbnail(
-                            selected, colormap="gray"
-                        )
+                        buf = render_tif_thumbnail(selected, colormap="gray")
                         if buf:
                             st.image(buf, caption=f"Preview: {selected.name[:60]}",
                                      use_container_width=True)
@@ -574,7 +609,6 @@ elif page == "SAR File Gallery":
         else:
             st.success(f"Found {len(files)} log-ratio files")
 
-            # Gallery grid
             cols_per_row = 3
             for i in range(0, min(len(files), 12), cols_per_row):
                 cols = st.columns(cols_per_row)
@@ -585,9 +619,7 @@ elif page == "SAR File Gallery":
                         with col:
                             with st.spinner(f"Loading {date_str}..."):
                                 buf = render_tif_thumbnail(
-                                    f, colormap="RdYlGn_r",
-                                    vmin=-3, vmax=3
-                                )
+                                    f, colormap="RdYlGn_r", vmin=-3, vmax=3)
                                 if buf:
                                     st.image(buf, caption=date_str,
                                              use_container_width=True)
@@ -603,12 +635,10 @@ elif page == "SAR File Gallery":
                 col_img, col_stats = st.columns([2, 1])
                 with col_img:
                     buf = render_tif_thumbnail(
-                        selected_lr, colormap="RdYlGn_r",
-                        vmin=-10, vmax=10
-                    )
+                        selected_lr, colormap="RdYlGn_r", vmin=-10, vmax=10)
                     if buf:
                         st.image(buf,
-                                 caption=f"Red = backscatter increase | Green = decrease",
+                                 caption="Red = backscatter increase | Green = decrease",
                                  use_container_width=True)
                 with col_stats:
                     try:
@@ -637,20 +667,18 @@ elif page == "SAR File Gallery":
     with tab3:
         st.markdown("**Z-score images: how many standard deviations each pixel deviates from baseline. |z| > 2.5 = statistically significant change.**")
         st.info("""
-**How to read z-score images:**  
-Z-score measures how unusual each pixel is compared to the baseline period.  
-- **|z| > 2.5** = statistically significant change (less than 1% chance it's random)  
-- **Red pixels** = strong backscatter increase = new structures, equipment, hard surfaces  
-- **Blue pixels** = strong backscatter decrease = cleared land, flooded surface  
-- **White/grey** = no significant change from baseline  
-Think of it as a confidence map — the brighter the red, the more certain the change is real.
+**How to read z-score images:**
+Z-score measures how unusual each pixel is compared to the baseline period.
+- **|z| > 2.5** = statistically significant change (less than 1% chance it's random)
+- **Red pixels** = strong backscatter increase = new structures, equipment, hard surfaces
+- **Blue pixels** = strong backscatter decrease = cleared land, flooded surface
+- **White/grey** = no significant change from baseline
         """)
         files = get_zscore_files()
         if not files:
             st.warning("No zscore_*.tif files found.")
         else:
             st.success(f"Found {len(files)} z-score files")
-
             cols_per_row = 3
             for i in range(0, min(len(files), 12), cols_per_row):
                 cols = st.columns(cols_per_row)
@@ -660,9 +688,7 @@ Think of it as a confidence map — the brighter the red, the more certain the c
                         date_str = extract_date(f.name)
                         with col:
                             buf = render_tif_thumbnail(
-                                f, colormap="seismic",
-                                vmin=-5, vmax=5
-                            )
+                                f, colormap="seismic", vmin=-5, vmax=5)
                             if buf:
                                 st.image(buf, caption=date_str,
                                          use_container_width=True)
@@ -674,16 +700,13 @@ elif page == "Change Detection Map":
     st.title("Change Detection Map")
     st.markdown("Interactive map of classified change polygons over Mundra Port.")
 
-    # Filters
-    # Filters
-    df = load_classified()
+    df  = load_classified()
     gdf = load_geodata()
 
     if df.empty:
         st.error("classified_final.csv not found")
         st.stop()
 
-    # Valid zone → change type mapping from your actual data
     ZONE_TYPE_MAP = {
         "All zones": ["All types", "Anchorage_Change", "Background_Change",
                       "Hinterland_Activity", "Hinterland_Change",
@@ -700,29 +723,20 @@ elif page == "Change Detection Map":
     }
 
     col1, col2, col3 = st.columns(3)
-
     with col1:
         selected_zone = st.selectbox("Zone", list(ZONE_TYPE_MAP.keys()))
-
     with col2:
-        valid_types = ZONE_TYPE_MAP[selected_zone]
+        valid_types   = ZONE_TYPE_MAP[selected_zone]
         selected_type = st.selectbox("Change type", valid_types)
-
     with col3:
-        dates = sorted(df["date_from"].unique().tolist())
+        dates         = sorted(df["date_from"].unique().tolist())
         selected_date = st.selectbox(
             "Date", ["All dates"] + dates,
-            index=dates.index("20250704") + 1
-            if "20250704" in dates else 0
+            index=dates.index("20250704") + 1 if "20250704" in dates else 0
         )
 
-    st.info(
-        "Tip: Each zone only contains specific change types. "
-        "Select **Terminal_Hardstanding** + **Terminal_Expansion** "
-        "+ date **20250704** to see the peak construction event."
-    )
+    st.info("Tip: Select Terminal_Hardstanding + Terminal_Expansion + date 20250704 to see the peak construction event.")
 
-    # Filter GeoDataFrame
     fgdf = gdf.copy()
     if selected_zone != "All zones":
         fgdf = fgdf[fgdf["zone_name"] == selected_zone]
@@ -732,23 +746,13 @@ elif page == "Change Detection Map":
         fgdf = fgdf[fgdf["date_from"] == selected_date]
 
     if len(fgdf) == 0:
-        st.warning(
-            f"No polygons found for this combination. "
-            f"This zone/type combination may not exist in the data. "
-            f"Try: Terminal_Hardstanding + Terminal_Expansion + 20250704"
-        )
+        st.warning("No polygons found for this combination. Try: Terminal_Hardstanding + Terminal_Expansion + 20250704")
         st.stop()
     else:
         st.info(f"Showing {len(fgdf):,} polygons")
 
-    # Build Folium map
-    m = folium.Map(
-        location=[22.76, 69.67],
-        zoom_start=12,
-        tiles="CartoDB positron"
-    )
+    m = folium.Map(location=[22.76, 69.67], zoom_start=12, tiles="CartoDB dark_matter")
 
-    # Add satellite basemap option
     folium.TileLayer(
         tiles="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
         attr="Google Satellite",
@@ -756,7 +760,6 @@ elif page == "Change Detection Map":
         overlay=False,
     ).add_to(m)
 
-    # Color map for change types
     type_colors = {
         "Terminal_Expansion"    : "#B71C1C",
         "Construction_Active"   : "#F44336",
@@ -770,16 +773,14 @@ elif page == "Change Detection Map":
         "Background_Change"     : "#BDBDBD",
     }
 
-    # Add zone boundary boxes
     zone_boxes = {
-        "Terminal": [[22.72, 69.58], [22.80, 69.75]],
-        "Anchorage": [[22.55, 69.50], [22.72, 69.90]],
+        "Terminal"  : [[22.72, 69.58], [22.80, 69.75]],
+        "Anchorage" : [[22.55, 69.50], [22.72, 69.90]],
         "Hinterland": [[22.80, 69.58], [22.95, 69.85]],
     }
     for zname, bounds in zone_boxes.items():
         folium.Rectangle(
-            bounds=bounds,
-            color="#666", weight=1.5,
+            bounds=bounds, color="#00ff46", weight=1.5,
             fill=False, dash_array="5 5",
             tooltip=f"Zone: {zname}",
         ).add_to(m)
@@ -787,37 +788,29 @@ elif page == "Change Detection Map":
             location=[(bounds[0][0]+bounds[1][0])/2,
                       (bounds[0][1]+bounds[1][1])/2],
             icon=folium.DivIcon(
-                html=f'<div style="font-size:11px;color:#555;'
-                     f'font-weight:600;white-space:nowrap">{zname}</div>',
+                html=f'<div style="font-size:11px;color:#00ff46;'
+                     f'font-weight:600;white-space:nowrap;'
+                     f'font-family:monospace">{zname}</div>',
                 icon_size=(80, 20),
             )
         ).add_to(m)
 
-    # Add polygons (limit to 5000 for performance)
-    # Limit polygons based on type — Outside/Background too dense to render
     if selected_zone == "Outside" or selected_type == "Background_Change":
-        st.warning(
-            "Background_Change covers the full scene outside port zones. "
-            "These are noise polygons with no intelligence value. "
-            "Select a port zone instead — try Terminal_Hardstanding + Terminal_Expansion."
-        )
+        st.warning("Background_Change covers the full scene — noise polygons with no intelligence value. Select a port zone instead.")
         st.stop()
 
-    limit = 200 if selected_date == "All dates" else 1000
+    limit    = 200 if selected_date == "All dates" else 1000
     plot_gdf = fgdf.head(limit)
     if len(fgdf) > limit:
-        st.warning(f"Showing first {limit} of {len(fgdf):,} polygons. "
-                   f"Select a specific date to see all polygons for that scene.")
+        st.warning(f"Showing first {limit} of {len(fgdf):,} polygons. Select a specific date to see all.")
 
     for _, row in plot_gdf.iterrows():
         try:
-            ct    = row.get("change_type", "Unknown")
-            color = type_colors.get(ct, "#888")
-            area  = row.get("area_m2", 0)
-            delta = row.get("mean_delta_db", 0)
-            date  = row.get("date_from", "")
-
-            # Radius scaled by area — bigger polygon = bigger circle
+            ct     = row.get("change_type", "Unknown")
+            color  = type_colors.get(ct, "#888")
+            area   = row.get("area_m2", 0)
+            delta  = row.get("mean_delta_db", 0)
+            date   = row.get("date_from", "")
             radius = max(4, min(20, (area / 10000) ** 0.5 * 3))
 
             folium.CircleMarker(
@@ -838,30 +831,28 @@ elif page == "Change Detection Map":
         except Exception:
             continue
 
-    # Legend
     legend_html = """
     <div style="position:fixed;bottom:30px;right:30px;z-index:1000;
-         background:white;padding:12px 16px;border-radius:8px;
-         border:1px solid #ccc;font-size:12px;box-shadow:2px 2px 6px rgba(0,0,0,0.15)">
-    <b>Change type</b><br>
+         background:#0a0f0a;padding:12px 16px;border-radius:0;
+         border:1px solid rgba(0,255,70,0.3);font-size:12px;
+         font-family:monospace;color:#00ff46">
+    <b style="color:#00ff46">CHANGE TYPE</b><br>
     """
     for ct, color in type_colors.items():
         if ct in ["Terminal_Expansion","Construction_Active",
                   "Vessel_Presence","Anchorage_Change","Hinterland_Activity"]:
             legend_html += (f'<span style="background:{color};display:inline-block;'
-                           f'width:12px;height:12px;border-radius:2px;'
-                           f'margin-right:6px;vertical-align:middle"></span>'
-                           f'{ct.replace("_"," ")}<br>')
+                           f'width:12px;height:12px;margin-right:6px;'
+                           f'vertical-align:middle"></span>'
+                           f'<span style="color:#00ff46">{ct.replace("_"," ")}</span><br>')
     legend_html += "</div>"
     m.get_root().html.add_child(folium.Element(legend_html))
 
     folium.LayerControl().add_to(m)
 
-    # Render map
     with st.spinner("Rendering map..."):
         st_folium(m, width=None, height=550, returned_objects=[])
 
-    # Stats below map
     if not fgdf.empty and "change_type" in fgdf.columns:
         st.markdown("---")
         st.subheader("Filtered results summary")
@@ -869,7 +860,7 @@ elif page == "Change Detection Map":
         with col_a:
             by_type = (fgdf.groupby("change_type")
                           .agg(count=("area_m2","count"),
-                               area_km2=("area_m2", lambda x: round(x.sum()/1e6,3)))
+                               area_km2=("area_m2", lambda x: round(x.sum()/1e6, 3)))
                           .sort_values("area_km2", ascending=False))
             st.dataframe(by_type, use_container_width=True)
         with col_b:
@@ -900,13 +891,12 @@ elif page == "Economic Correlation":
 
     term = df[df["zone_id"] == 1].copy()
     term["month"] = term["date_dt"].dt.to_period("M").dt.to_timestamp()
-    monthly_peak = term.groupby("month")["mean_delta_db"].max().reset_index()
+    monthly_peak  = term.groupby("month")["mean_delta_db"].max().reset_index()
 
-    # Cargo data
     cargo = pd.DataFrame({
-        "date": pd.to_datetime(["2024-09-30","2024-12-31","2025-03-31",
-                                 "2025-06-30","2025-09-30","2025-12-31","2026-03-31"]),
-        "mmt" : [47.2, 49.1, 51.3, 52.8, 55.4, 54.9, 57.2],
+        "date"   : pd.to_datetime(["2024-09-30","2024-12-31","2025-03-31",
+                                   "2025-06-30","2025-09-30","2025-12-31","2026-03-31"]),
+        "mmt"    : [47.2, 49.1, 51.3, 52.8, 55.4, 54.9, 57.2],
         "quarter": ["Q2 FY25","Q3 FY25","Q4 FY25",
                     "Q1 FY26","Q2 FY26","Q3 FY26","Q4 FY26"],
     })
@@ -918,10 +908,10 @@ elif page == "Economic Correlation":
             "Terminal zone — peak backscatter delta (construction intensity)",
             "Mundra Port quarterly cargo throughput (MMT)"
         ],
-        vertical_spacing=0.12,
+        vertical_spacing=0.14,
     )
 
-    # SAR signal
+    # ── SAR signal ──
     fig.add_trace(go.Scatter(
         x=monthly_peak["month"],
         y=monthly_peak["mean_delta_db"].round(2),
@@ -929,31 +919,35 @@ elif page == "Economic Correlation":
         name="Peak Δσ° (dB)",
         line=dict(color="#E24B4A", width=2.5),
         marker=dict(size=8, color="#E24B4A",
-                    line=dict(color="white", width=1.5)),
+                    line=dict(color=DARK_BG, width=1.5)),
         fill="tozeroy",
         fillcolor="rgba(226,75,74,0.12)",
     ), row=1, col=1)
 
-    fig.add_hline(y=3, line_dash="dash", line_color="#999",
-                  annotation_text="3 dB threshold",
-                  annotation_font_size=10, row=1, col=1)
-    fig.add_hline(y=6, line_dash="dot", line_color="#E24B4A",
-                  annotation_text="6 dB high confidence",
-                  annotation_font_size=10, row=1, col=1)
-
-    # Phase 1 shading
+    fig.add_hline(
+        y=3, line_dash="dash", line_color="rgba(0,255,70,0.4)",
+        annotation_text="3 dB threshold",
+        annotation_font=dict(color=GREEN_DIM, size=9),
+        annotation_position="bottom right",
+        row=1, col=1,
+    )
+    fig.add_hline(
+        y=6, line_dash="dot", line_color="#E24B4A",
+        annotation_text="6 dB high confidence",
+        annotation_font=dict(color="#E24B4A", size=9),
+        annotation_position="bottom right",
+        row=1, col=1,
+    )
     fig.add_vrect(
         x0="2025-06-01", x1="2025-08-31",
-        fillcolor="rgba(226,75,74,0.08)",
-        line_width=0,
+        fillcolor="rgba(226,75,74,0.08)", line_width=0,
         annotation_text="Phase 1",
         annotation_position="top left",
-        annotation_font_size=11,
-        annotation_font_color="#E24B4A",
-        row=1, col=1
+        annotation_font=dict(size=11, color="#E24B4A"),
+        row=1, col=1,
     )
 
-    # Cargo
+    # ── Cargo ──
     fig.add_trace(go.Scatter(
         x=cargo["date"],
         y=cargo["mmt"],
@@ -961,76 +955,60 @@ elif page == "Economic Correlation":
         name="Cargo (MMT)",
         line=dict(color="#378ADD", width=2.5),
         marker=dict(size=10, color="#378ADD",
-                    line=dict(color="white", width=2)),
+                    line=dict(color=DARK_BG, width=2)),
         text=cargo["mmt"],
         textposition="top center",
         textfont=dict(size=10, color="#378ADD"),
     ), row=2, col=1)
 
-   # Announcement line — using shape instead of add_vline for compatibility
+    # ── APSEZ announcement line ──
     for row_n in [1, 2]:
         fig.add_shape(
             type="line",
             x0="2025-09-18", x1="2025-09-18",
             y0=0, y1=1,
-            yref="paper",
-            xref="x",
+            yref="paper", xref="x",
             line=dict(color="#F59E0B", width=1.5, dash="dash"),
-            row=row_n, col=1
+            row=row_n, col=1,
         )
     fig.add_annotation(
-        x="2025-09-18", y=0.95,
+        x="2025-09-18", y=0.97,
         xref="x", yref="paper",
         text="APSEZ ₹30,000 Cr expansion",
         showarrow=False,
-        font=dict(color="#F59E0B", size=10),
-        bgcolor="rgba(255,255,255,0.7)",
+        font=dict(color="#F59E0B", size=10, family=FONT_FAM),
+        bgcolor="rgba(10,15,10,0.8)",
         bordercolor="#F59E0B",
+        borderwidth=1,
     )
 
     fig.update_layout(
-        height=600,
+        height=620,
         showlegend=True,
-        plot_bgcolor="white",
-        paper_bgcolor="white",
         legend=dict(orientation="h", yanchor="bottom",
                     y=1.02, xanchor="right", x=1),
         margin=dict(l=60, r=20, t=80, b=40),
     )
-    fig.update_layout(
-        plot_bgcolor  = "#0a0f0a",
-        paper_bgcolor = "#0a0f0a",
-        font          = dict(color="#00ff46",
-                             family="Share Tech Mono, Courier New, monospace",
-                             size=11),
-        xaxis = dict(gridcolor="rgba(0,255,70,0.1)",
-                     tickfont=dict(color="#00ff46"),
-                     title_font=dict(color="rgba(0,255,70,0.6)")),
-        yaxis = dict(gridcolor="rgba(0,255,70,0.1)",
-                     tickfont=dict(color="#00ff46"),
-                     title_font=dict(color="rgba(0,255,70,0.6)")),
-    )
-    
-    fig.update_yaxes(title_text="Peak Δσ° (dB)", row=1, col=1,
-                     gridcolor="#f0f0f0")
-    fig.update_yaxes(title_text="Cargo throughput (MMT)", row=2, col=1,
-                     gridcolor="#f0f0f0", range=[44, 60])
-    fig.update_xaxes(gridcolor="#f0f0f0")
+
+    # Apply dark theme AFTER all traces/annotations are added
+    apply_dark_theme(fig, rows=2)
+
+    fig.update_yaxes(title_text="Peak Δσ° (dB)",        row=1, col=1)
+    fig.update_yaxes(title_text="Cargo throughput (MMT)", row=2, col=1, range=[44, 60])
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Summary table
     st.subheader("Quarter-by-quarter summary")
     summary = pd.DataFrame({
-        "Quarter"      : cargo["quarter"],
-        "Cargo (MMT)"  : cargo["mmt"],
-        "Period"       : ["Sep 2024","Dec 2024","Mar 2025",
-                          "Jun 2025","Sep 2025","Dec 2025","Mar 2026"],
-        "SAR phase"    : ["—","—","Baseline",
-                          "Low activity","PEAK ACTIVITY","Moderate","Low activity"],
-        "Notes"        : ["","","Pre-construction baseline",
-                          "Construction begins","17.2 dB peak · Phase 1",
-                          "APSEZ announcement Sep 18","Phase 2 activity"],
+        "Quarter"     : cargo["quarter"],
+        "Cargo (MMT)" : cargo["mmt"],
+        "Period"      : ["Sep 2024","Dec 2024","Mar 2025",
+                         "Jun 2025","Sep 2025","Dec 2025","Mar 2026"],
+        "SAR phase"   : ["—","—","Baseline",
+                         "Low activity","PEAK ACTIVITY","Moderate","Low activity"],
+        "Notes"       : ["","","Pre-construction baseline",
+                         "Construction begins","17.2 dB peak · Phase 1",
+                         "APSEZ announcement Sep 18","Phase 2 activity"],
     })
     st.dataframe(summary, use_container_width=True, hide_index=True)
 
@@ -1054,8 +1032,6 @@ elif page == "Intelligence Report":
         with open(str(report_path), "r", encoding="utf-8") as f:
             report = f.read()
         st.code(report, language=None)
-
-        # Download button
         st.download_button(
             label="Download full report (.txt)",
             data=report,
