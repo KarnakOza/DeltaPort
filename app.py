@@ -67,42 +67,155 @@ else:
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* Force dark background */
-  .stApp { background: #0a0e17 !important; color: #c9d1e0 !important; }
-  .stSidebar { background: #0d1220 !important; border-right: 1px solid #1e2d45; }
-  
-  /* Top title */
-  .main-header {
-    font-family: monospace; font-size: 1.6rem; font-weight: 500;
-    color: #4a9eff; letter-spacing: 3px; text-transform: uppercase;
-  }
-  .sub-header { font-size: 0.85rem; color: #3a5a7a; letter-spacing: 1px; font-family: monospace; }
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
-  /* Metric cards */
-  .metric-card {
-    background: #0d1525; border: 1px solid #1a2d45;
-    border-top: 2px solid #1e4080; border-radius: 4px;
-    padding: 1rem 1.25rem;
-  }
-  .metric-card.hot { border-top-color: #ff4444; }
-  .metric-card.ok  { border-top-color: #00e676; }
-  .metric-card.warn{ border-top-color: #ffaa00; }
-  .metric-val { font-size: 1.8rem; font-weight: 500; color: #e0eaff; font-family: monospace; }
-  .metric-lbl { font-size: 0.7rem; color: #4a6080; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; font-family: monospace; }
-  .metric-sub { font-size: 0.7rem; color: #2a4060; margin-top: 2px; font-family: monospace; }
+.stApp {
+    background-color: #0a0f0a !important;
+    background-image:
+        linear-gradient(rgba(0,255,70,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,70,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
 
-  /* Finding box */
-  .finding-box {
-    background: #0f1c10; border: 1px solid #1a4a1a;
-    border-left: 3px solid #00e676; border-radius: 0 4px 4px 0;
-    padding: 0.85rem 1.25rem; font-size: 0.85rem;
-    color: #5ab86c; font-family: monospace; letter-spacing: 0.3px;
-  }
-  .validated-box {
-    background: #0a1220; border: 1px solid #1a3050;
-    border-left: 3px solid #4a9eff; border-radius: 0 4px 4px 0;
-    padding: 1rem 1.25rem; font-family: monospace; color: #5a8aaa;
-  }
+section[data-testid="stSidebar"] {
+    background-color: #060c06 !important;
+    border-right: 1px solid rgba(0,255,70,0.15) !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: rgba(0,255,70,0.8) !important;
+    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    font-size: 12px !important;
+    letter-spacing: 0.05em !important;
+}
+
+h1, h2, h3 {
+    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    color: #00ff46 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+}
+
+p, li, td, th, label, span, div {
+    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
+    color: rgba(0,255,70,0.85) !important;
+}
+
+.stButton button {
+    background: rgba(0,255,70,0.08) !important;
+    border: 1px solid #00ff46 !important;
+    color: #00ff46 !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    border-radius: 0 !important;
+}
+
+.stButton button:hover {
+    background: rgba(0,255,70,0.2) !important;
+}
+
+.stSelectbox > div > div {
+    background: #060c06 !important;
+    border: 1px solid rgba(0,255,70,0.3) !important;
+    color: #00ff46 !important;
+    border-radius: 0 !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    color: rgba(0,255,70,0.5) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    border-radius: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    letter-spacing: 0.08em !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+}
+
+.stTabs [aria-selected="true"] {
+    color: #00ff46 !important;
+    border-bottom: 2px solid #00ff46 !important;
+    background: rgba(0,255,70,0.05) !important;
+}
+
+.stDataFrame, .stTable {
+    border: 1px solid rgba(0,255,70,0.2) !important;
+}
+
+.metric-card {
+    background: rgba(0,255,70,0.04);
+    border: 1px solid rgba(0,255,70,0.25);
+    padding: 1rem;
+}
+.metric-val {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #00ff46;
+    font-family: 'Share Tech Mono', monospace;
+}
+.metric-lbl {
+    font-size: 9px;
+    color: rgba(0,255,70,0.45);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.metric-sub {
+    font-size: 9px;
+    color: rgba(0,255,70,0.35);
+    margin-top: 3px;
+}
+.finding-box {
+    border: 1px solid rgba(0,255,70,0.35);
+    border-left: 3px solid #00ff46;
+    background: rgba(0,255,70,0.04);
+    padding: 1rem;
+    color: rgba(0,255,70,0.9);
+    font-size: 12px;
+    line-height: 1.7;
+    margin: 1rem 0;
+}
+.validated-box {
+    border: 1px solid rgba(0,255,70,0.25);
+    background: rgba(0,255,70,0.03);
+    padding: 1rem;
+    color: rgba(0,255,70,0.7);
+    font-size: 11px;
+    line-height: 1.8;
+}
+.phase-high {
+    background: rgba(255,68,68,0.12);
+    color: #ff4444;
+    border: 1px solid #ff4444;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-family: monospace;
+}
+.phase-mod {
+    background: rgba(255,170,0,0.1);
+    color: #ffaa00;
+    border: 1px solid #ffaa00;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-family: monospace;
+}
+.phase-low {
+    background: rgba(0,204,51,0.1);
+    color: #00cc33;
+    border: 1px solid #00cc33;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-family: monospace;
+}
+.phase-base {
+    background: rgba(0,255,70,0.05);
+    color: rgba(0,255,70,0.35);
+    border: 1px solid rgba(0,255,70,0.2);
+    padding: 1px 8px;
+    font-size: 10px;
+    font-family: monospace;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -254,10 +367,20 @@ with st.sidebar:
 # PAGE 1: OVERVIEW
 # ─────────────────────────────────────────────
 if page == "Overview":
-    st.markdown('<h1 class="main-header">DeltaPort</h1>',
-                unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Satellite radar analysis of Mundra Port construction activity · Sentinel-1 · 31 scenes · April 2025 – April 2026</p>',
-                unsafe_allow_html=True)
+    st.markdown("""
+    <div style="border-bottom:1px solid rgba(0,255,70,0.2);
+                padding-bottom:1rem;margin-bottom:1.5rem">
+        <div style="font-size:9px;color:rgba(0,255,70,0.4);
+                    letter-spacing:0.2em;margin-bottom:6px">
+            // DELTAPORT INTELLIGENCE SYSTEM · ACTIVE
+        </div>
+        <h1 style="font-size:2.5rem;margin:0;line-height:1">DELTAPORT</h1>
+        <div style="font-size:10px;color:rgba(0,255,70,0.45);
+                    letter-spacing:0.15em;margin-top:6px">
+            SATELLITE RADAR ANALYSIS · MUNDRA PORT · 31 SCENES · APR 2025–APR 2026
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -874,6 +997,20 @@ elif page == "Economic Correlation":
                     y=1.02, xanchor="right", x=1),
         margin=dict(l=60, r=20, t=80, b=40),
     )
+    fig.update_layout(
+        plot_bgcolor  = "#0a0f0a",
+        paper_bgcolor = "#0a0f0a",
+        font          = dict(color="#00ff46",
+                             family="Share Tech Mono, Courier New, monospace",
+                             size=11),
+        xaxis = dict(gridcolor="rgba(0,255,70,0.1)",
+                     tickfont=dict(color="#00ff46"),
+                     title_font=dict(color="rgba(0,255,70,0.6)")),
+        yaxis = dict(gridcolor="rgba(0,255,70,0.1)",
+                     tickfont=dict(color="#00ff46"),
+                     title_font=dict(color="rgba(0,255,70,0.6)")),
+    )
+    
     fig.update_yaxes(title_text="Peak Δσ° (dB)", row=1, col=1,
                      gridcolor="#f0f0f0")
     fig.update_yaxes(title_text="Cargo throughput (MMT)", row=2, col=1,
