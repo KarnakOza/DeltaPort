@@ -111,10 +111,6 @@ st.markdown("""
 
 .stApp {
     background-color: #0a0f0a !important;
-    background-image:
-        linear-gradient(rgba(0,255,70,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,255,70,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
 }
 
 section[data-testid="stSidebar"] {
@@ -132,13 +128,12 @@ section[data-testid="stSidebar"] * {
 h1, h2, h3 {
     font-family: 'Share Tech Mono', 'Courier New', monospace !important;
     color: #00ff46 !important;
-    letter-spacing: 0.08em !important;
-    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
 }
 
-p, li, td, th, label, span, div {
-    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
-    color: rgba(0,255,70,0.85) !important;
+p, li, td, th, label {
+    font-family: -apple-system, 'Segoe UI', sans-serif !important;
+    color: rgba(210,255,220,0.85) !important;
 }
 
 .stButton button {
@@ -366,31 +361,43 @@ def render_tif_thumbnail(filepath, colormap="gray", vmin=None, vmax=None):
         return None
 
 # ─────────────────────────────────────────────
-# SIDEBAR
+# TOP NAVIGATION (replaces the old sidebar radio nav)
+# Change Detection Map is now the #2 stop — right after Overview —
+# since that's the page with the actual intelligence payoff.
 # ─────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("### 🛰️ Mundra SAR Intelligence")
-    st.markdown("---")
-    page = st.radio(
-        "Navigation",
-        ["Overview", "SAR File Gallery", "Change Detection Map",
-         "Economic Correlation", "Intelligence Report"],
-        label_visibility="collapsed"
-    )
-    st.markdown("---")
-    st.markdown("""
-**Dataset**
-- Sensor: Sentinel-1A IW GRD
-- Scenes: 31
-- Period: Apr 2025 – Apr 2026
-- Method: Log-ratio change detection
+NAV_ORDER = ["Overview", "Change Detection Map", "Economic Correlation",
+             "SAR File Gallery", "Intelligence Report"]
 
-**Pipeline**
-- Preprocessing: ESA SNAP
-- Analysis: Python + rasterio
-- Database: PostGIS 3.6
-- Visualisation: QGIS + Streamlit
-""")
+if "page" not in st.session_state:
+    st.session_state.page = "Overview"
+
+def goto(p):
+    st.session_state.page = p
+
+st.markdown("""
+<div style="display:flex;align-items:baseline;justify-content:space-between;
+            border-bottom:1px solid rgba(0,255,70,0.18);padding-bottom:0.6rem;
+            margin-bottom:0.8rem">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:15px;
+                color:#00ff46;letter-spacing:0.04em">🛰️ DELTAPORT</div>
+    <div style="font-size:10px;color:rgba(0,255,70,0.4)">Mundra Port · Sentinel-1 SAR</div>
+</div>
+""", unsafe_allow_html=True)
+
+nav_cols = st.columns(len(NAV_ORDER))
+for i, label in enumerate(NAV_ORDER):
+    with nav_cols[i]:
+        is_active = st.session_state.page == label
+        st.button(
+            label,
+            key=f"nav_{label}",
+            use_container_width=True,
+            type="primary" if is_active else "secondary",
+            on_click=goto,
+            args=(label,),
+        )
+
+page = st.session_state.page
 
 # ─────────────────────────────────────────────
 # PAGE 1: OVERVIEW
@@ -439,13 +446,20 @@ if page == "Overview":
 
     st.markdown("")
 
-    st.markdown("""<div class="finding-box">
-        <strong>🔍 Key finding:</strong> Sentinel-1 SAR detected peak construction
-        activity at Mundra Port terminal zone in June–August 2025
-        (max Δσ° = 17.2 dB, 13.8 km² classified as Terminal Expansion),
-        preceding APSEZ's September 2025 public announcement of
-        ₹30,000 crore Mundra berth expansion by approximately 6 weeks.
-    </div>""", unsafe_allow_html=True)
+    finding_col, cta_col = st.columns([3, 1])
+    with finding_col:
+        st.markdown("""<div class="finding-box">
+            <strong>🔍 Key finding:</strong> Sentinel-1 SAR detected peak construction
+            activity at Mundra Port terminal zone in June–August 2025
+            (max Δσ° = 17.2 dB, 13.8 km² classified as Terminal Expansion),
+            preceding APSEZ's September 2025 public announcement of
+            ₹30,000 crore Mundra berth expansion by approximately 6 weeks.
+        </div>""", unsafe_allow_html=True)
+    with cta_col:
+        st.markdown("<div style='height:1.1rem'></div>", unsafe_allow_html=True)
+        st.button("See it on the map →", use_container_width=True,
+                   type="primary", on_click=goto, args=("Change Detection Map",))
+        st.caption("219,187 change polygons, filterable by zone and date.")
 
     # ── AOI MAP ──────────────────────────────────
     st.markdown("""
@@ -454,14 +468,21 @@ if page == "Overview":
         // AREA OF INTEREST · MUNDRA PORT · 22.76°N 69.67°E · UTM 43N
     </div>""", unsafe_allow_html=True)
 
-    map_col, info_col = st.columns([3, 1])
+    expand_map = st.toggle("Expand map", value=False, key="expand_aoi_map")
+
+    if expand_map:
+        map_col = st.container()
+        info_col = None
+        map_height = 640
+    else:
+        map_col, info_col = st.columns([3, 1])
+        map_height = 460
 
     with map_col:
         aoi_map = folium.Map(
             location=[22.76, 69.67],
             zoom_start=12,
             tiles=None,
-            width="100%",
         )
 
         # Dark basemap
@@ -576,9 +597,10 @@ if page == "Overview":
         aoi_map.get_root().html.add_child(folium.Element(scale_html))
 
         folium.LayerControl(position="topright").add_to(aoi_map)
-        st_folium(aoi_map, width=None, height=340, returned_objects=[])
+        st_folium(aoi_map, width=None, height=map_height, returned_objects=[])
 
-    with info_col:
+    if info_col is not None:
+     with info_col:
         st.markdown("""
 <div style="font-family:monospace;font-size:10px;color:rgba(0,255,70,0.85);
             line-height:2;padding-top:0.5rem">
@@ -1021,8 +1043,10 @@ elif page == "Change Detection Map":
 
     folium.LayerControl().add_to(m)
 
+    cdm_expand = st.toggle("Expand map", value=False, key="expand_cdm_map")
     with st.spinner("Rendering map..."):
-        st_folium(m, width=None, height=550, returned_objects=[])
+        st_folium(m, width=None, height=800 if cdm_expand else 550,
+                  returned_objects=[])
 
     if not fgdf.empty and "change_type" in fgdf.columns:
         st.markdown("---")
@@ -1228,4 +1252,28 @@ elif page == "Intelligence Report":
 | Visualisation | QGIS + matplotlib | Maps + charts |
 | Economic correlation | APSEZ quarterly reports | Cargo vs SAR timeline |
 | Validation | Public announcement match | 6-week lead time confirmed |
+""")
+
+# ─────────────────────────────────────────────
+# FOOTER — dataset facts that used to live in the permanent sidebar.
+# Available everywhere, but out of the way.
+# ─────────────────────────────────────────────
+st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+with st.expander("Dataset & pipeline details"):
+    fcol1, fcol2 = st.columns(2)
+    with fcol1:
+        st.markdown("""
+**Dataset**
+- Sensor: Sentinel-1A IW GRD
+- Scenes: 31
+- Period: Apr 2025 – Apr 2026
+- Method: Log-ratio change detection
+""")
+    with fcol2:
+        st.markdown("""
+**Pipeline**
+- Preprocessing: ESA SNAP
+- Analysis: Python + rasterio
+- Database: PostGIS 3.6
+- Visualisation: QGIS + Streamlit
 """)
